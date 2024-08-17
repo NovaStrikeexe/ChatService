@@ -5,9 +5,9 @@ namespace ChatService.Services.Message.Implementation;
 
 public class MessageService(IMessageRepository messageRepository) : IMessageService
 {
-    public async Task SaveMessageAsync(Msg msg) 
+    public async Task<MsgDto> SaveMessageAsync(Msg msg) 
         => await messageRepository.SaveMessageAsync(msg);
 
-    public async Task<IEnumerable<Msg>> GetMessagesAsync(DateTime startTime, DateTime endTime) 
+    public async Task<IEnumerable<MsgDto>> GetMessagesAsync(DateTime startTime, DateTime endTime) 
         => await messageRepository.GetMessagesAsync(startTime, endTime);
 }

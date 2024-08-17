@@ -1,15 +1,23 @@
+﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+USER $APP_UID
+WORKDIR /app
+EXPOSE 8080
+EXPOSE 8081
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["Server/Server.csproj", "Server/"]
-RUN dotnet restore "Server/Server.csproj"
+COPY ["ChatService/ChatService.csproj", "ChatService/"]
+RUN dotnet restore "ChatService/ChatService.csproj"
 COPY . .
-WORKDIR "/src/Server"
-RUN dotnet build "Server.csproj" -c Release -o /app/build
+WORKDIR "/src/ChatService"
+RUN dotnet build "ChatService.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "Server.csproj" -c Release -o /app/publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "ChatService.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Server.dll"]
+ENTRYPOINT ["dotnet", "ChatService.dll"]

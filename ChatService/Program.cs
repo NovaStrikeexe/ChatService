@@ -1,5 +1,7 @@
 using ChatService;
+using ChatService.Configuration;
 using Serilog;
+using Serilog.Events;
 using Serilog.Formatting.Json;
 
 public class Program
@@ -7,8 +9,11 @@ public class Program
     public static void Main(string[] args)
     {
         Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Information()
+            .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+            .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Error) 
+            .WriteTo.Console(new CustomJsonFormatter())
             .Enrich.FromLogContext()
-            .WriteTo.Console(new JsonFormatter())
             .CreateLogger();
 
         try
@@ -23,7 +28,6 @@ public class Program
         }
         finally
         {
-            Log.Information("Application is shutting down...");
             Log.CloseAndFlush();
         }
     }

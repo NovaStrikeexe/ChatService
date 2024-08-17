@@ -4,7 +4,7 @@ namespace ChatService.Services.Message;
 
 public interface IMessageService
 {
-    public Task SaveMessageAsync(Msg msg);
+    public Task<MsgDto> SaveMessageAsync(Msg msg);
 
-    public Task<IEnumerable<Msg>> GetMessagesAsync(DateTime start, DateTime end);
+    public Task<IEnumerable<MsgDto>> GetMessagesAsync(DateTime start, DateTime end);
 }

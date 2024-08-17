@@ -3,68 +3,81 @@ using ChatService.Models;
 using Microsoft.Extensions.Options;
 using Npgsql;
 
-namespace ChatService.Data.Implementation
+namespace ChatService.Data.Implementation;
+
+public class MessageRepository(ILogger<MessageRepository> logger, IOptions<DbSettings> dbSettings)
+    : IMessageRepository
 {
-    public class MessageRepository(ILogger<MessageRepository> logger, IOptions<DbSettings> dbSettings)
-        : IMessageRepository
+    private readonly string _connectionString = dbSettings.Value.DefaultConnection 
+                                                ?? throw new ArgumentNullException(nameof(dbSettings.Value.DefaultConnection), "Connection string cannot be null.");
+
+    public async Task<MsgDto> SaveMessageAsync(Msg msg)
     {
-        private readonly string _connectionString = dbSettings.Value.DefaultConnection 
-                                                    ?? throw new ArgumentNullException(nameof(dbSettings.Value.DefaultConnection), "Connection string cannot be null.");
-
-        public async Task SaveMessageAsync(Msg msg)
+        try
         {
-            try
-            {
-                await using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
+            await using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
 
-                var query = "INSERT INTO Messages (Content, CreatedAt) VALUES (@content, @createdAt)";
-                await using var command = new NpgsqlCommand(query, connection);
-                command.Parameters.AddWithValue("@content", msg.Content);
-                command.Parameters.AddWithValue("@createdAt", msg.Date);
+            var date = DateTime.UtcNow;
 
-                await command.ExecuteNonQueryAsync();
-            }
-            catch (Exception exception)
+            var query = @" INSERT INTO messages (id, content, date) VALUES (@Id, @Content, @Date) ON CONFLICT (id) 
+            DO UPDATE SET content = EXCLUDED.content, date = EXCLUDED.date;";
+            await using var command = new NpgsqlCommand(query, connection);
+
+            command.Parameters.AddWithValue("@Id", msg.Id);
+            command.Parameters.AddWithValue("@Content", msg.Content);
+            
+            command.Parameters.AddWithValue("@Date", date);
+
+            await command.ExecuteNonQueryAsync();
+
+            return new MsgDto
             {
-                logger.LogError(exception, $"{nameof(MessageRepository)}.{nameof(SaveMessageAsync)}");
-                throw;
-            }
+                Id = msg.Id,
+                Content = msg.Content,
+                Date = date
+            };
         }
-
-        public async Task<IEnumerable<Msg>> GetMessagesAsync(DateTime startTime, DateTime endTime)
+        catch (Exception exception)
         {
-            var messages = new List<Msg>();
+            logger.LogError(exception, $"{nameof(MessageRepository)}.{nameof(SaveMessageAsync)}");
+            throw;
+        }
+    
+    }
 
-            try
+    public async Task<IEnumerable<MsgDto>> GetMessagesAsync(DateTime startTime, DateTime endTime)
+    {
+        var messages = new List<MsgDto>();
+
+        try
+        {
+            await using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var query = "SELECT id, content, date FROM messages WHERE date BETWEEN @startTime AND @endTime ORDER BY date";
+            await using var command = new NpgsqlCommand(query, connection);
+            command.Parameters.AddWithValue("@startTime", startTime);
+            command.Parameters.AddWithValue("@endTime", endTime);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
             {
-                await using var connection = new NpgsqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                var query = "SELECT Id, Content, CreatedAt FROM Messages WHERE CreatedAt BETWEEN @startTime AND @endTime ORDER BY CreatedAt";
-                await using var command = new NpgsqlCommand(query, connection);
-                command.Parameters.AddWithValue("@startTime", startTime);
-                command.Parameters.AddWithValue("@endTime", endTime);
-
-                await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                var message = new MsgDto
                 {
-                    var message = new Msg
-                    {
-                        Id = reader.GetInt32(0),
-                        Content = reader.GetString(1),
-                        Date = reader.GetDateTime(2)
-                    };
-                    messages.Add(message);
-                }
+                    Id = reader.GetInt32(0),
+                    Content = reader.GetString(1),
+                    Date = reader.GetDateTime(2)
+                };
+                messages.Add(message);
             }
-            catch (Exception exception)
-            {
-                logger.LogError(exception, $"{nameof(MessageRepository)}.{nameof(GetMessagesAsync)} failed for range: {startTime} - {endTime}");
-                throw;
-            }
-
-            return messages;
         }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, $"{nameof(MessageRepository)}.{nameof(GetMessagesAsync)} failed for range: {startTime} - {endTime}");
+            throw;
+        }
+
+        return messages;
     }
 }

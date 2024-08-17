@@ -6,5 +6,5 @@ public interface IWebSocketService
 {
     public Task HandleWebSocketAsync(HttpContext context);
 
-    public Task SendMessageToAllAsync(Msg msg);
+    public Task SendMessageToAllAsync(MsgDto msgDto);
 }

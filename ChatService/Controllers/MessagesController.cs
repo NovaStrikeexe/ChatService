@@ -17,7 +17,7 @@ public class MessagesController(
     /// <summary>
     /// Sends a message to the server.
     /// </summary>
-    /// <param name="msg">The message to send. Content is limited to 128 characters.</param>
+    /// <param name="Content">The message to send. Content is limited to 128 characters.</param>
     /// <returns>HTTP 200 OK if the message was successfully processed.</returns>
     /// <response code="200">Message was successfully processed.</response>
     /// <response code="400">Invalid message data.</response>
@@ -26,19 +26,19 @@ public class MessagesController(
     [ProducesResponseType(typeof(void), 200)]
     [ProducesResponseType(typeof(void), 400)]
     [ProducesResponseType(typeof(void), 500)]
-    public async Task<IActionResult> PostMessage([FromBody] Msg msg)
+    public async Task<IActionResult> PostMessage([FromBody] Msg message)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        logger.LogInformation("Received a new message to save: {Content}", msg.Content);
+        logger.LogInformation($"{nameof(MessagesController)}{nameof(PostMessage)}: Received a new message to save: {new{message.Id, message.Content}}");
 
-        await messageService.SaveMessageAsync(msg); 
-        await webSocketService.SendMessageToAllAsync(msg);
+        var savedMessage = await messageService.SaveMessageAsync(message); 
+        await webSocketService.SendMessageToAllAsync(savedMessage);
 
-        logger.LogInformation("Message saved and sent to clients: {Content}", msg.Content);
+        logger.LogInformation($"{nameof(MessagesController)}{nameof(PostMessage)}: Message saved and sent to clients: {new {savedMessage.Id, savedMessage.Content, savedMessage.Date}}");
 
         return Ok();
     }
@@ -53,16 +53,16 @@ public class MessagesController(
     /// <response code="400">Invalid date range provided.</response>
     /// <response code="500">An error occurred while processing the request.</response>
     [HttpGet("get-messages")]
-    [ProducesResponseType(typeof(IEnumerable<Msg>), 200)]
+    [ProducesResponseType(typeof(IEnumerable<MsgDto>), 200)]
     [ProducesResponseType(typeof(void), 400)]
     [ProducesResponseType(typeof(void), 500)]
     public async Task<IActionResult> GetMessages([FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
     {
-        logger.LogInformation("Fetching messages between {StartTime} and {EndTime}", startTime, endTime);
+        logger.LogInformation($"{nameof(MessagesController)}{nameof(GetMessages)}: Fetching messages between {startTime} and {endTime}");
 
         var messages = await messageService.GetMessagesAsync(startTime, endTime);
 
-        logger.LogInformation("Fetched {Count} messages", messages.LongCount());
+        logger.LogInformation($"{nameof(MessagesController)}{nameof(GetMessages)}: Fetched { (int)messages.LongCount()} messages");
 
         return Ok(messages);
     }
