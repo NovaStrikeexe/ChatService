@@ -1,0 +1,26 @@
+﻿@page "/send-message"
+@inject MessageService MessageService
+
+<h3>Send a Message</h3>
+
+<input @bind="messageContent" placeholder="Enter your message" />
+<button @onclick="SendMessage">Send</button>
+
+@code {
+    private string messageContent = string.Empty;
+
+    private async Task SendMessage()
+    {
+        if (!string.IsNullOrWhiteSpace(messageContent))
+        {
+            var msg = new Message
+            {
+                Content = messageContent,
+                Date = DateTime.UtcNow
+            };
+
+            await MessageService.SendMessageAsync(msg);
+            messageContent = string.Empty;
+        }
+    }
+}
