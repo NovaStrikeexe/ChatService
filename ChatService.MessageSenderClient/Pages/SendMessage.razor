@@ -1,0 +1,52 @@
+﻿@page "/send-message"
+@using ChatService.MessageSenderClient.Models
+@inject HttpClient Http
+@code {
+    private string messageContent;
+    private string errorMessage;
+    private bool isSuccess;
+
+    private async Task SendMessageAsync()
+    {
+        var newMessage = new Msg
+        {
+            Content = messageContent
+        };
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/v1/message/send-message", newMessage);
+
+            if (response.IsSuccessStatusCode)
+            {
+                isSuccess = true;
+                errorMessage = null;
+                messageContent = string.Empty;
+            }
+            else
+            {
+                isSuccess = false;
+                errorMessage = await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            isSuccess = false;
+            errorMessage = $"An unexpected error occurred: {ex.Message}";
+        }
+    }
+}
+
+<h3>Send Message</h3>
+
+<input @bind="messageContent" placeholder="Enter your message" maxlength="128" />
+<button @onclick="SendMessageAsync">Send</button>
+
+@if (isSuccess)
+{
+    <p>Message sent successfully!</p>
+}
+else if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color:red;">Error: @errorMessage</p>
+}

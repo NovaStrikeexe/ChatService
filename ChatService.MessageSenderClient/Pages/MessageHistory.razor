@@ -1,28 +1,53 @@
-﻿@page "/message-history"
-@inject MessageService MessageService
+﻿@page "/get-messages"
+@using ChatService.MessageSenderClient.Models
+@inject HttpClient Http
+@code {
+    private DateTime startTime = DateTime.UtcNow.AddMinutes(-10);
+    private DateTime endTime = DateTime.UtcNow;
+    private List<Msg> messages = new();
+    private string errorMessage;
+
+    private async Task FetchMessagesAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"api/v1/message/get-messages?startTime={startTime:o}&endTime={endTime:o}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                messages = await response.Content.ReadFromJsonAsync<List<Msg>>() ?? new List<Msg>();
+                errorMessage = null;
+            }
+            else
+            {
+                errorMessage = await response.Content.ReadAsStringAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An unexpected error occurred: {ex.Message}";
+        }
+    }
+}
 
 <h3>Message History</h3>
 
-<ul>
-    @foreach (var msg in messages)
-    {
-        <li>@msg.Date: @msg.Content</li>
-    }
-</ul>
+<button @onclick="FetchMessagesAsync">Fetch Messages</button>
 
-@code {
-    private List<Message> messages = new List<Message>();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadMessagesAsync();
-    }
-
-    private async Task LoadMessagesAsync()
-    {
-        var now = DateTime.UtcNow;
-        var startTime = now.AddMinutes(-10);
-        messages = (await MessageService.GetMessagesAsync(startTime, now)).ToList();
-        StateHasChanged(); // Обновляем интерфейс
-    }
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p style="color:red;">Error: @errorMessage</p>
+}
+else if (messages.Any())
+{
+    <ul>
+        @foreach (var msg in messages)
+        {
+            <li>@msg.Date.ToString("u"): @msg.Content</li>
+        }
+    </ul>
+}
+else
+{
+    <p>No messages found for the specified time range.</p>
 }
