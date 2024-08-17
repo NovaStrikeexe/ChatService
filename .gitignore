@@ -161,4 +161,5 @@ obj
 
 .idea
 bin
+*.sln.DotSettings.user
 
