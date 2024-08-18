@@ -38,7 +38,6 @@ public class Startup
         });
 
         services.AddControllers();
-            
         services.AddTransient<IMessageService, MessageService>();
         services.AddScoped<IMessageRepository, MessageRepository>();
 
@@ -57,11 +56,13 @@ public class Startup
             options.KeepAliveInterval = TimeSpan.FromSeconds(120);
         });
 
+        services.Configure<CorsSettings>(Configuration.GetSection("Cors"));
         services.AddCors(options =>
         {
+            var corsSettings = Configuration.GetSection("Cors").Get<CorsSettings>();
             options.AddPolicy("AllowSpecificOrigin", builder =>
             {
-                builder.WithOrigins("http://localhost:5068")
+                builder.WithOrigins(corsSettings.AllowedOrigin)
                     .AllowAnyMethod()
                     .AllowAnyHeader();
             });
@@ -75,12 +76,13 @@ public class Startup
                 Title = swaggerSettings.Title,
                 Version = swaggerSettings.Version
             });
-                
+
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            c.IncludeXmlComments(xmlPath); 
+            c.IncludeXmlComments(xmlPath);
         });
     }
+
 
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
@@ -100,8 +102,7 @@ public class Startup
         app.UseRouting();
 
         app.UseWebSockets();
-
-        app.UseCors("AllowSpecificOrigin"); // Используем политику CORS
+        app.UseCors("AllowSpecificOrigin");
 
         app.UseEndpoints(endpoints =>
         {
@@ -113,8 +114,8 @@ public class Startup
             });
             endpoints.Map("/ws", async context =>
             {
-                var webSocketManager = context.RequestServices.GetRequiredService<IWebSocketService>();
-                await webSocketManager.HandleWebSocketAsync(context);
+                var webSocketService = context.RequestServices.GetRequiredService<IWebSocketService>();
+                await webSocketService.HandleWebSocketAsync(context);
             });
         });
     }
