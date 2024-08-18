@@ -2,7 +2,6 @@ using ChatService;
 using ChatService.Configuration;
 using Serilog;
 using Serilog.Events;
-using Serilog.Formatting.Json;
 
 public class Program
 {

@@ -1,52 +1,30 @@
 ﻿@page "/send-message"
-@using ChatService.MessageSenderClient.Models
-@inject HttpClient Http
+@using ChatService.MessageSenderClient.Services
+@using ChatService.MessageSenderClient.Shared.Models
+@inject IMessageService MessageService
+
+<h3>Отправка сообщения</h3>
+<input @bind="messageContent" placeholder="Введите сообщение (до 128 символов)" maxlength="128" />
+<button @onclick="SendMessageAsync">Отправить</button>
+
 @code {
-    private string messageContent;
-    private string errorMessage;
-    private bool isSuccess;
+    private string messageContent = "";
+    private int messageId = 0;
 
     private async Task SendMessageAsync()
     {
-        var newMessage = new Msg
+        var message = new MsgDto
         {
-            Content = messageContent
+            Id = messageId++,
+            Content = messageContent,
+            Date = DateTime.UtcNow
         };
 
-        try
+        var success = await MessageService.SendMessageAsync(message);
+        
+        if (success)
         {
-            var response = await Http.PostAsJsonAsync("api/v1/message/send-message", newMessage);
-
-            if (response.IsSuccessStatusCode)
-            {
-                isSuccess = true;
-                errorMessage = null;
-                messageContent = string.Empty;
-            }
-            else
-            {
-                isSuccess = false;
-                errorMessage = await response.Content.ReadAsStringAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            isSuccess = false;
-            errorMessage = $"An unexpected error occurred: {ex.Message}";
+            messageContent = "";
         }
     }
-}
-
-<h3>Send Message</h3>
-
-<input @bind="messageContent" placeholder="Enter your message" maxlength="128" />
-<button @onclick="SendMessageAsync">Send</button>
-
-@if (isSuccess)
-{
-    <p>Message sent successfully!</p>
-}
-else if (!string.IsNullOrEmpty(errorMessage))
-{
-    <p style="color:red;">Error: @errorMessage</p>
 }

@@ -1,13 +1,20 @@
-using ChatService.MessageSenderClient;
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.AspNetCore.SignalR.Client;
+using ChatService.MessageSenderClient;
+using ChatService.MessageSenderClient.Services;
+using ClientApp.Services;
 
-var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
+namespace ClientApp;
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddScoped(sp => new HubConnectionBuilder().WithUrl("/chathub").Build());
+public class Program
+{
+    public static async Task Main(string[] args)
+    {
+        var builder = WebAssemblyHostBuilder.CreateDefault(args);
+        builder.RootComponents.Add<App>("app");
 
-await builder.Build().RunAsync();
+        builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:5150/") });
+        builder.Services.AddScoped<IMessageService, MessageService>();
+
+        await builder.Build().RunAsync();
+    }
+}

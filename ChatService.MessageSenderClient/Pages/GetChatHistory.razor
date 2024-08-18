@@ -1,0 +1,24 @@
+﻿@page "/history"
+@using ChatService.MessageSenderClient.Services
+@using ChatService.MessageSenderClient.Shared.Models
+@inject IMessageService MessageService
+
+<h3>История сообщений</h3>
+<ul>
+    @foreach (var message in messages)
+    {
+    <li>@message.Date.ToString("T"): @message.Content (ID: @message.Id)</li>
+    }
+</ul>
+
+@code {
+    private List<MsgDto> messages = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var now = DateTime.UtcNow;
+        var tenMinutesAgo = now.AddMinutes(-10);
+
+        messages = await MessageService.GetMessageHistoryAsync(tenMinutesAgo, now);
+    }
+}

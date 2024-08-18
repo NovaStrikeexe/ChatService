@@ -38,7 +38,7 @@ public class Startup
         });
 
         services.AddControllers();
-        
+            
         services.AddTransient<IMessageService, MessageService>();
         services.AddScoped<IMessageRepository, MessageRepository>();
 
@@ -59,13 +59,14 @@ public class Startup
 
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", builder =>
+            options.AddPolicy("AllowSpecificOrigin", builder =>
             {
-                builder.AllowAnyOrigin()
+                builder.WithOrigins("http://localhost:5068")
                     .AllowAnyMethod()
                     .AllowAnyHeader();
             });
         });
+
         services.AddSwaggerGen(c =>
         {
             var swaggerSettings = Configuration.GetSection("Swagger").Get<SwaggerSettings>();
@@ -74,7 +75,7 @@ public class Startup
                 Title = swaggerSettings.Title,
                 Version = swaggerSettings.Version
             });
-            
+                
             var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             c.IncludeXmlComments(xmlPath); 
@@ -100,7 +101,7 @@ public class Startup
 
         app.UseWebSockets();
 
-        app.UseCors("AllowAll");
+        app.UseCors("AllowSpecificOrigin"); // Используем политику CORS
 
         app.UseEndpoints(endpoints =>
         {
