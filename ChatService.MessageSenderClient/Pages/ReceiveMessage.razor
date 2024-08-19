@@ -5,8 +5,8 @@
 <h3>Messages</h3>
 
 @foreach (var message in _messages)
-{
-    <p>@message.Id @message.Content @message.Date</p>
+{ 
+    <li>@message.Date.ToString("T"): @message.Content (ID: @message.Id)</li>
 }
 
 @code {
@@ -21,7 +21,16 @@
 
         _hubConnection.On<MsgDto>("ReceiveMessage", (msgDto) =>
         {
-            _messages.Add(msgDto);
+            var existingMessageIndex = _messages.FindIndex(m => m.Id == msgDto.Id);
+            if (existingMessageIndex >= 0)
+            {
+                _messages[existingMessageIndex] = msgDto;
+            }
+            else
+            {
+                _messages.Add(msgDto);
+            }
+
             InvokeAsync(StateHasChanged);
         });
 
