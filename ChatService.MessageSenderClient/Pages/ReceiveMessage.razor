@@ -28,9 +28,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        // Initialize WebSocket connection
         _webSocket = new ClientWebSocket();
-        var uri = new Uri(Navigation.ToAbsoluteUri("ws://localhost:5150/ws").ToString()); // URL вашего WebSocket сервера
+        var uri = new Uri(Navigation.ToAbsoluteUri("ws://localhost:5150/ws").ToString());
 
         try
         {
