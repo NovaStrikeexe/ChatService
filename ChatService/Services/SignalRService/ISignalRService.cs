@@ -2,9 +2,7 @@
 
 namespace ChatService.Services.WebSocket;
 
-public interface IWebSocketService
+public interface ISignalRService
 {
-    public Task HandleWebSocketAsync(HttpContext context);
-
     public Task SendMessageToAllAsync(MsgDto msgDto);
 }

@@ -2,10 +2,11 @@
 using ChatService.Configuration.Models;
 using ChatService.Data;
 using ChatService.Data.Implementation;
+using ChatService.Hubs;
 using ChatService.Services.Message;
 using ChatService.Services.Message.Implementation;
+using ChatService.Services.SignalRService.Implementation;
 using ChatService.Services.WebSocket;
-using ChatService.Services.WebSocket.Implementation;
 using Microsoft.AspNetCore.WebSockets;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
@@ -37,8 +38,10 @@ public class Startup
             return dbSettings.DefaultConnection;
         });
 
+        services.AddSignalR();
         services.AddControllers();
         services.AddTransient<IMessageService, MessageService>();
+        services.AddScoped<ISignalRService, SignalRService>();
         services.AddScoped<IMessageRepository, MessageRepository>();
 
         services.AddSingleton(sp =>
@@ -48,9 +51,7 @@ public class Startup
             connection.Open();
             return connection;
         });
-
-        services.AddSingleton<IWebSocketService, WebSocketService>();
-
+        
         services.AddWebSockets(options =>
         {
             options.KeepAliveInterval = TimeSpan.FromSeconds(120);
@@ -110,12 +111,8 @@ public class Startup
                 context.Response.StatusCode = 200;
                 await context.Response.WriteAsync("Healthy");
             });
-            endpoints.Map("/ws", async context =>
-            {
-                var webSocketService = context.RequestServices.GetRequiredService<IWebSocketService>();
-                await webSocketService.HandleWebSocketAsync(context);
-            });
+            
+            endpoints.MapHub<ChatHub>("/chathub");
         });
     }
-
 }

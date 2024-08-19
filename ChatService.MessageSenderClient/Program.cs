@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using ChatService.MessageSenderClient;
 using ChatService.MessageSenderClient.Services;
-using ClientApp.Services;
+using ChatService.MessageSenderClient.Services.Http;
+using ChatService.MessageSenderClient.Services.Http.Implementation;
+using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
-namespace ClientApp;
+namespace ChatService.MessageSenderClient;
 
 public class Program
 {

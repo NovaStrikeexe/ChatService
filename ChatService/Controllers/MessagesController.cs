@@ -11,16 +11,16 @@ namespace ChatService.Controllers;
 public class MessagesController : ControllerBase
 {
     private readonly IMessageService _messageService;
-    private readonly IWebSocketService _webSocketService;
+    private readonly ISignalRService _signalRService;
     private readonly ILogger<MessagesController> _logger;
 
     public MessagesController(
         IMessageService messageService,
-        IWebSocketService webSocketService,
+        ISignalRService signalRService,
         ILogger<MessagesController> logger)
     {
         _messageService = messageService;
-        _webSocketService = webSocketService;
+        _signalRService = signalRService;
         _logger = logger;
     }
 
@@ -48,7 +48,7 @@ public class MessagesController : ControllerBase
         try
         {
             var savedMessage = await _messageService.SaveMessageAsync(message);
-            await _webSocketService.SendMessageToAllAsync(savedMessage);
+            await _signalRService.SendMessageToAllAsync(savedMessage);
 
             _logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Message saved and sent to clients: {new { savedMessage.Id, savedMessage.Content, savedMessage.Date }}");
 
