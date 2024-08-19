@@ -8,16 +8,26 @@ namespace ChatService.Controllers;
 
 [ApiController]
 [Route("api/v1/message")]
-public class MessagesController(
-    IMessageService messageService,
-    IWebSocketService webSocketService,
-    ILogger<MessagesController> logger)
-    : ControllerBase
+public class MessagesController : ControllerBase
 {
+    private readonly IMessageService _messageService;
+    private readonly IWebSocketService _webSocketService;
+    private readonly ILogger<MessagesController> _logger;
+
+    public MessagesController(
+        IMessageService messageService,
+        IWebSocketService webSocketService,
+        ILogger<MessagesController> logger)
+    {
+        _messageService = messageService;
+        _webSocketService = webSocketService;
+        _logger = logger;
+    }
+
     /// <summary>
     /// Sends a message to the server.
     /// </summary>
-    /// <param name="Content">The message to send. Content is limited to 128 characters.</param>
+    /// <param name="message">The message to send. Content is limited to 128 characters.</param>
     /// <returns>HTTP 200 OK if the message was successfully processed.</returns>
     /// <response code="200">Message was successfully processed.</response>
     /// <response code="400">Invalid message data.</response>
@@ -33,14 +43,22 @@ public class MessagesController(
             return BadRequest(ModelState);
         }
 
-        logger.LogInformation($"{nameof(MessagesController)}{nameof(PostMessage)}: Received a new message to save: {new{message.Id, message.Content}}");
+        _logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Received a new message to save: {new { message.Id, message.Content }}");
 
-        var savedMessage = await messageService.SaveMessageAsync(message); 
-        await webSocketService.SendMessageToAllAsync(savedMessage);
+        try
+        {
+            var savedMessage = await _messageService.SaveMessageAsync(message);
+            await _webSocketService.SendMessageToAllAsync(savedMessage);
 
-        logger.LogInformation($"{nameof(MessagesController)}{nameof(PostMessage)}: Message saved and sent to clients: {new {savedMessage.Id, savedMessage.Content, savedMessage.Date}}");
+            _logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Message saved and sent to clients: {new { savedMessage.Id, savedMessage.Content, savedMessage.Date }}");
 
-        return Ok();
+            return Ok();
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, $"{nameof(MessagesController)}.{nameof(PostMessage)}: Error occurred while saving or sending the message.");
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
     }
 
     /// <summary>
@@ -58,12 +76,25 @@ public class MessagesController(
     [ProducesResponseType(typeof(void), 500)]
     public async Task<IActionResult> GetMessages([FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
     {
-        logger.LogInformation($"{nameof(MessagesController)}{nameof(GetMessages)}: Fetching messages between {startTime} and {endTime}");
+        if (startTime >= endTime)
+        {
+            return BadRequest("Invalid date range provided.");
+        }
 
-        var messages = await messageService.GetMessagesAsync(startTime, endTime);
+        _logger.LogInformation($"{nameof(MessagesController)}.{nameof(GetMessages)}: Fetching messages between {startTime} and {endTime}");
 
-        logger.LogInformation($"{nameof(MessagesController)}{nameof(GetMessages)}: Fetched { (int)messages.LongCount()} messages");
+        try
+        {
+            var messages = await _messageService.GetMessagesAsync(startTime, endTime);
 
-        return Ok(messages);
+            _logger.LogInformation($"{nameof(MessagesController)}.{nameof(GetMessages)}: Fetched {messages.Count()} messages");
+
+            return Ok(messages);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, $"{nameof(MessagesController)}.{nameof(GetMessages)}: Error occurred while retrieving messages.");
+            return StatusCode(500, "An error occurred while processing your request.");
+        }
     }
 }

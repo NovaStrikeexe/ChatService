@@ -21,12 +21,11 @@ public class MessageRepository(ILogger<MessageRepository> logger, IOptions<DbSet
             var date = DateTime.UtcNow;
 
             var query = @" INSERT INTO messages (id, content, date) VALUES (@Id, @Content, @Date) ON CONFLICT (id) 
-            DO UPDATE SET content = EXCLUDED.content, date = EXCLUDED.date;";
+                DO UPDATE SET content = EXCLUDED.content, date = EXCLUDED.date;";
             await using var command = new NpgsqlCommand(query, connection);
 
             command.Parameters.AddWithValue("@Id", msg.Id);
             command.Parameters.AddWithValue("@Content", msg.Content);
-            
             command.Parameters.AddWithValue("@Date", date);
 
             await command.ExecuteNonQueryAsync();
@@ -43,7 +42,6 @@ public class MessageRepository(ILogger<MessageRepository> logger, IOptions<DbSet
             logger.LogError(exception, $"{nameof(MessageRepository)}.{nameof(SaveMessageAsync)}");
             throw;
         }
-    
     }
 
     public async Task<IEnumerable<MsgDto>> GetMessagesAsync(DateTime startTime, DateTime endTime)

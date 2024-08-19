@@ -9,6 +9,7 @@ public class WebSocketService(ILogger<WebSocketService> logger) : IWebSocketServ
 {
     private readonly List<System.Net.WebSockets.WebSocket> _sockets = [];
     private readonly object _syncLock = new();
+
     public async Task SendMessageToAllAsync(MsgDto msgDto)
     {
         logger.LogInformation($"{nameof(WebSocketService)}: {nameof(SendMessageToAllAsync)}: Sending message to all clients - Id: {msgDto.Id}, Content: {msgDto.Content}, Date: {msgDto.Date}");
@@ -26,9 +27,9 @@ public class WebSocketService(ILogger<WebSocketService> logger) : IWebSocketServ
             await Task.WhenAll(tasks);
             logger.LogInformation($"{nameof(WebSocketService)}: {nameof(SendMessageToAllAsync)}: Message successfully sent to all clients.");
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            logger.LogError(ex, $"{nameof(WebSocketService)}: {nameof(SendMessageToAllAsync)}: Error occurred while sending message to all clients.");
+            logger.LogError(exception, $"{nameof(WebSocketService)}: {nameof(SendMessageToAllAsync)}: Error occurred while sending message to all clients.");
             throw;
         }
     }
@@ -75,9 +76,9 @@ public class WebSocketService(ILogger<WebSocketService> logger) : IWebSocketServ
                 logger.LogInformation($"{nameof(WebSocketService)}: {nameof(ListenAsync)}: WebSocket closed and removed.");
             }
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            logger.LogError(ex, $"{nameof(WebSocketService)}: {nameof(ListenAsync)}: Error occurred while listening to WebSocket. Removing socket.");
+            logger.LogError(exception, $"{nameof(WebSocketService)}: {nameof(ListenAsync)}: Error occurred while listening to WebSocket. Removing socket.");
             lock (_syncLock)
             {
                 _sockets.Remove(socket);
