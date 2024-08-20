@@ -1,99 +1,105 @@
-﻿using ChatService.Models;
-using ChatService.Services.Message;
-using ChatService.Services.WebSocket;
+﻿using ChatService.Contracts.Http;
+using ChatService.Contracts.SignalR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.SignalR;
+using ChatService.Hubs;
+using ChatService.Services.Message;
 
 namespace ChatService.Controllers;
 
 [ApiController]
 [Route("api/v1/message")]
-public class MessagesController : ControllerBase
+public class MessagesController(
+    IMessageService messageService,
+    IHubContext<ChatHub> hubContext,
+    ILogger<MessagesController> logger)
+    : ControllerBase
 {
-    private readonly IMessageService _messageService;
-    private readonly ISignalRService _signalRService;
-    private readonly ILogger<MessagesController> _logger;
-
-    public MessagesController(
-        IMessageService messageService,
-        ISignalRService signalRService,
-        ILogger<MessagesController> logger)
-    {
-        _messageService = messageService;
-        _signalRService = signalRService;
-        _logger = logger;
-    }
-
     /// <summary>
-    /// Sends a message to the server.
+    /// Отправляет сообщение на сервер.
     /// </summary>
-    /// <param name="message">The message to send. Content is limited to 128 characters.</param>
-    /// <returns>HTTP 200 OK if the message was successfully processed.</returns>
-    /// <response code="200">Message was successfully processed.</response>
-    /// <response code="400">Invalid message data.</response>
-    /// <response code="500">An error occurred while processing the request.</response>
+    /// <param name="messageRequest">Сообщение для отправки. ID и Content обязательны.</param>
+    /// <param name="cancellationToken">Токен отмены для запроса.</param>
+    /// <returns>HTTP 200 OK, если сообщение было успешно обработано.</returns>
+    /// <response code="200">Сообщение успешно обработано.</response>
+    /// <response code="400">Некорректные данные сообщения.</response>
+    /// <response code="500">Произошла ошибка при обработке запроса.</response>
     [HttpPost("send-message")]
     [ProducesResponseType(typeof(void), 200)]
     [ProducesResponseType(typeof(void), 400)]
     [ProducesResponseType(typeof(void), 500)]
-    public async Task<IActionResult> PostMessage([FromBody] Msg message)
+    public async Task<IActionResult> PostMessage([FromBody] MessageRequest messageRequest, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
         {
             return BadRequest(ModelState);
         }
 
-        _logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Received a new message to save: {new { message.Id, message.Content }}");
+        logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Received a new message to save: {new { messageRequest.Id, messageRequest.Content }}");
 
         try
         {
-            var savedMessage = await _messageService.SaveMessageAsync(message);
-            await _signalRService.SendMessageToAllAsync(savedMessage);
+            var messageDto = new MessageDto
+            {
+                Id = messageRequest.Id,
+                Content = messageRequest.Content,
+                Date = DateTime.UtcNow
+            };
 
-            _logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Message saved and sent to clients: {new { savedMessage.Id, savedMessage.Content, savedMessage.Date }}");
+            var savedMessage = await messageService.SaveMessageAsync(messageDto, cancellationToken);
+
+            await hubContext.Clients.All.SendAsync("ReceiveMessage", new MessageSignalRDto
+            {
+                Id = savedMessage.Id,
+                Content = savedMessage.Content,
+                Date = savedMessage.Date
+            }, cancellationToken);
+
+            logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Message saved and sent to clients: {new { savedMessage.Id, savedMessage.Content, savedMessage.Date }}");
 
             return Ok();
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, $"{nameof(MessagesController)}.{nameof(PostMessage)}: Error occurred while saving or sending the message.");
+            logger.LogError(exception, $"{nameof(MessagesController)}.{nameof(PostMessage)}: Error occurred while saving or sending the message.");
             return StatusCode(500, "An error occurred while processing your request.");
         }
     }
 
     /// <summary>
-    /// Retrieves a list of messages sent within a specific time range.
+    /// Получает список сообщений, отправленных в определенном диапазоне времени.
     /// </summary>
-    /// <param name="startTime">The start time of the range.</param>
-    /// <param name="endTime">The end time of the range.</param>
-    /// <returns>A list of messages within the specified time range.</returns>
-    /// <response code="200">Successfully retrieved the messages.</response>
-    /// <response code="400">Invalid date range provided.</response>
-    /// <response code="500">An error occurred while processing the request.</response>
+    /// <param name="startTime">Время начала диапазона.</param>
+    /// <param name="endTime">Время конца диапазона.</param>
+    /// <param name="cancellationToken">Токен отмены для запроса.</param>
+    /// <returns>Список сообщений в указанном диапазоне времени.</returns>
+    /// <response code="200">Сообщения успешно получены.</response>
+    /// <response code="400">Некорректный диапазон дат.</response>
+    /// <response code="500">Произошла ошибка при обработке запроса.</response>
     [HttpGet("get-messages")]
-    [ProducesResponseType(typeof(IEnumerable<MsgDto>), 200)]
+    [ProducesResponseType(typeof(IEnumerable<MessageDto>), 200)]
     [ProducesResponseType(typeof(void), 400)]
     [ProducesResponseType(typeof(void), 500)]
-    public async Task<IActionResult> GetMessages([FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
+    public async Task<IActionResult> GetMessages([FromQuery] DateTime startTime, [FromQuery] DateTime endTime, CancellationToken cancellationToken)
     {
         if (startTime >= endTime)
         {
-            return BadRequest("Invalid date range provided.");
+            return BadRequest("Invalid date range.");
         }
 
-        _logger.LogInformation($"{nameof(MessagesController)}.{nameof(GetMessages)}: Fetching messages between {startTime} and {endTime}");
+        logger.LogInformation($"{nameof(MessagesController)}.{nameof(GetMessages)}: Fetching messages between {startTime} and {endTime}");
 
         try
         {
-            var messages = await _messageService.GetMessagesAsync(startTime, endTime);
+            var messages = await messageService.GetMessagesAsync(startTime, endTime, cancellationToken);
 
-            _logger.LogInformation($"{nameof(MessagesController)}.{nameof(GetMessages)}: Fetched {messages.Count()} messages");
+            logger.LogInformation($"{nameof(MessagesController)}.{nameof(GetMessages)}: Fetched {messages.Count()} messages");
 
             return Ok(messages);
         }
         catch (Exception exception)
         {
-            _logger.LogError(exception, $"{nameof(MessagesController)}.{nameof(GetMessages)}: Error occurred while retrieving messages.");
+            logger.LogError(exception, $"{nameof(MessagesController)}.{nameof(GetMessages)}: Error occurred while retrieving messages.");
             return StatusCode(500, "An error occurred while processing your request.");
         }
     }

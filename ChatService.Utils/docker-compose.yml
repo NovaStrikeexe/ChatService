@@ -1,19 +1,9 @@
-version: '3.8'
-
-networks:
-  my_network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 127.0.0.0/16
-          ip_range: 127.0.0.0/24
-
 services:
   db:
     image: postgres:latest
     container_name: chatservice_db
     ports:
-      - "${DB_PORT}:${DB_PORT}"
+      - "${DB_PORT}:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -22,8 +12,6 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
-    networks:
-      - my_network
 
   chatservice:
     build:
@@ -32,7 +20,7 @@ services:
     image: chatservice:latest
     container_name: chatservice
     ports:
-      - "${CHAT_SERVICE_PORT}:${CHAT_SERVICE_PORT}"
+      - "${CHAT_SERVICE_PORT}:80"
     volumes:
       - .:/app
     env_file:
@@ -40,8 +28,6 @@ services:
     depends_on:
       - db
     restart: unless-stopped
-    networks:
-      - my_network
 
   client:
     build:
@@ -50,12 +36,10 @@ services:
     image: client:latest
     container_name: client
     ports:
-      - "${CLIENT_PORT}:${CLIENT_PORT}"
+      - "${CLIENT_PORT}:5068"
     depends_on:
       - chatservice
     restart: unless-stopped
-    networks:
-      - my_network
 
 volumes:
   pgdata:

@@ -1,13 +1,27 @@
-﻿using ChatService.Data;
-using ChatService.Models;
+﻿using ChatService.Contracts.Http;
+using ChatService.Data;
+using ChatService.Data.MessageRepository;
+using ChatService.Services.Message;
 
-namespace ChatService.Services.Message.Implementation;
-
-public class MessageService(IMessageRepository messageRepository) : IMessageService
+namespace ChatService.Services
 {
-    public async Task<MsgDto> SaveMessageAsync(Msg msg) 
-        => await messageRepository.SaveMessageAsync(msg);
+    public class MessageService : IMessageService
+    {
+        private readonly IMessageRepository _messageRepository;
 
-    public async Task<IEnumerable<MsgDto>> GetMessagesAsync(DateTime startTime, DateTime endTime) 
-        => await messageRepository.GetMessagesAsync(startTime, endTime);
+        public MessageService(IMessageRepository messageRepository)
+        {
+            _messageRepository = messageRepository;
+        }
+
+        public async Task<MessageDto> SaveMessageAsync(MessageDto messageDto, CancellationToken cancellationToken)
+        {
+            return await _messageRepository.SaveMessageAsync(messageDto, cancellationToken);
+        }
+
+        public async Task<IEnumerable<MessageDto>> GetMessagesAsync(DateTime startTime, DateTime endTime, CancellationToken cancellationToken)
+        {
+            return await _messageRepository.GetMessagesAsync(startTime, endTime, cancellationToken);
+        }
+    }
 }

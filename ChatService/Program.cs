@@ -1,5 +1,4 @@
 using ChatService;
-using ChatService.Configuration;
 using Serilog;
 using Serilog.Events;
 
@@ -11,7 +10,7 @@ public class Program
             .MinimumLevel.Information()
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Error) 
-            .WriteTo.Console(new CustomJsonFormatter())
+            .WriteTo.Console()//пока так но потом если будет нужно можно добавить логирование нужного формата и писать в elk/Loki 
             .Enrich.FromLogContext()
             .CreateLogger();
 

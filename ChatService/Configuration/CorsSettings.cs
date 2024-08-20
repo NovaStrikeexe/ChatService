@@ -1,4 +1,4 @@
-﻿namespace ChatService.Configuration.Models;
+﻿namespace ChatService.Configuration;
 
 public class CorsSettings
 {

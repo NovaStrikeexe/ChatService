@@ -1,10 +1,10 @@
-﻿using ChatService.Models;
+﻿using ChatService.Contracts.Http;
 
-namespace ChatService.Services.Message;
-
-public interface IMessageService
+namespace ChatService.Services.Message
 {
-    public Task<MsgDto> SaveMessageAsync(Msg msg);
-
-    public Task<IEnumerable<MsgDto>> GetMessagesAsync(DateTime start, DateTime end);
+    public interface IMessageService
+    {
+        Task<MessageDto> SaveMessageAsync(MessageDto message, CancellationToken cancellationToken);
+        Task<IEnumerable<MessageDto>> GetMessagesAsync(DateTime startTime, DateTime endTime, CancellationToken cancellationToken);
+    }
 }

@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using ChatService.Models;
+using ChatService.Contracts.SignalR;
 
 namespace ChatService.Hubs
 {
     public class ChatHub : Hub
     {
-        public async Task SendMessageToAllAsync(MsgDto msgDto)
+        public async Task SendMessageToAllAsync(MessageSignalRDto messageDto)
         {
-            await Clients.All.SendAsync("ReceiveMessage", msgDto);
+            await Clients.All.SendAsync("ReceiveMessage", messageDto);
         }
     }
 }
