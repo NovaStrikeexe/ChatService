@@ -1,23 +1,20 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
-WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
+﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /source
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
-ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
-COPY ["ChatService.MessageSenderClient/ChatService.MessageSenderClient.csproj", "ChatService.MessageSenderClient/"]
-RUN dotnet restore "ChatService.MessageSenderClient/ChatService.MessageSenderClient.csproj"
-COPY . .
-WORKDIR "/src/ChatService.MessageSenderClient"
-RUN dotnet build "ChatService.MessageSenderClient.csproj" -c $BUILD_CONFIGURATION -o /app/build
+COPY ChatService.MessageSenderClient/ChatService.MessageSenderClient.csproj ./ChatService.MessageSenderClient/
+WORKDIR /source/ChatService.MessageSenderClient
+RUN dotnet restore
 
-FROM build AS publish
-ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "ChatService.MessageSenderClient.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+COPY ChatService.MessageSenderClient/. ./
+RUN dotnet publish -c Release -o /app/publish
 
-FROM base AS final
-WORKDIR /app
-COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ChatService.MessageSenderClient.dll"]
+FROM nginx:alpine AS final
+WORKDIR /usr/share/nginx/html
+
+COPY --from=build /app/publish/wwwroot /usr/share/nginx/html
+
+RUN ls -al /usr/share/nginx/html
+
+EXPOSE 5068
+
+CMD ["nginx", "-g", "daemon off;"]
