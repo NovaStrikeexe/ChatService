@@ -1,11 +1,8 @@
-﻿using ChatService.Configuration;
-using ChatService.Data.Contracts;
+﻿using ChatService.Data.Contracts;
 using ChatService.Data.DataConnect;
 using ChatService.Data.MessageRepository.Implementation;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using Moq;
-using Xunit;
 
 namespace ChatService.Tests;
 
