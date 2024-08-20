@@ -1,13 +1,13 @@
 ﻿using System.Reflection;
 using ChatService.Configuration;
-using ChatService.Configuration.Models;
 using ChatService.Data.DataConnect;
 using ChatService.Data.DataConnect.Implementation;
 using ChatService.Data.MessageRepository;
 using ChatService.Data.MessageRepository.Implementation;
-using ChatService.Hubs;
 using ChatService.Services;
 using ChatService.Services.Message;
+using ChatService.Services.Message.Implementation;
+using ChatService.SignalR.Hubs;
 using Microsoft.AspNetCore.WebSockets;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;

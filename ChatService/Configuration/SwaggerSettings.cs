@@ -2,7 +2,7 @@
 
 public class SwaggerSettings
 {
-    public string Endpoint { get; set; }
-    public string Title { get; set; }
-    public string Version { get; set; }
+    public string Endpoint { get; init; }
+    public string Title { get; init; }
+    public string Version { get; init; }
 }

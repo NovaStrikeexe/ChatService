@@ -1,10 +1,10 @@
-﻿using ChatService.Controllers;
-using ChatService.Services.Message;
+﻿using ChatService.Services.Message;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
-using ChatService.Contracts.Http;
-using ChatService.Hubs;
+using ChatService.Http.Contracts;
+using ChatService.Http.Controllers;
+using ChatService.SignalR.Hubs;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ChatService.Tests
@@ -27,41 +27,33 @@ namespace ChatService.Tests
         [Fact]
         public async Task PostMessage_ShouldReturnOk()
         {
-            // Arrange
             var data =  DateTime.UtcNow;
             var message = new MessageDto { Id = 1, Content = "Test message" , Date = data};
-            var savedMessage = new MessageDto { Id = 1, Content = "Test message", Date = data};
 
-            MessageRequest messageRequest = new MessageRequest
+            var messageRequest = new MessageRequest
             {
                 Id = message.Id,
                 Content = message.Content
             };
-            _messageService.Setup(m => m.SaveMessageAsync(message, CancellationToken.None))
-                .ReturnsAsync(savedMessage);
+            _messageService.Setup(m => m.SaveMessageAsync(message, CancellationToken.None));
 
-            // Act
             var result = await _controller.PostMessage(messageRequest, CancellationToken.None);
 
-            // Assert
             Assert.IsType<OkResult>(result);
         }
 
         [Fact]
         public async Task GetMessages_ShouldReturnOk()
         {
-            // Arrange
             var startTime = DateTime.UtcNow.AddHours(-1);
             var endTime = DateTime.UtcNow;
             var messages = new List<MessageDto> { new() { Id = 1, Content = "Test message", Date = DateTime.UtcNow } };
             
             _messageService.Setup(m => m.GetMessagesAsync(startTime, endTime, CancellationToken.None))
-                .ReturnsAsync(messages);
-
-            // Act
+                .ReturnsAsync(messages); 
+            
             var result = await _controller.GetMessages(startTime, endTime, CancellationToken.None);
 
-            // Assert
             var actionResult = Assert.IsType<OkObjectResult>(result);
             var returnedMessages = Assert.IsType<List<MessageDto>>(actionResult.Value);
             Assert.Single(returnedMessages);

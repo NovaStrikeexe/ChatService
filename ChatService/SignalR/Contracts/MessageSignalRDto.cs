@@ -1,4 +1,4 @@
-﻿namespace ChatService.Contracts.SignalR;
+﻿namespace ChatService.SignalR.Contracts;
 
 public class MessageSignalRDto
 {

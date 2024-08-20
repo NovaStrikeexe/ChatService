@@ -1,6 +1,6 @@
-﻿namespace ChatService.Configuration.Models;
+﻿namespace ChatService.Configuration;
 
 public class DbSettings
 {
-    public string DefaultConnection { get; set; }
+    public string DefaultConnection { get; init; }
 }

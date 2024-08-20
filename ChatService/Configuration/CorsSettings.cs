@@ -2,5 +2,5 @@
 
 public class CorsSettings
 {
-    public string AllowedOrigin { get; set; }
+    public string AllowedOrigin { get; init; }
 }

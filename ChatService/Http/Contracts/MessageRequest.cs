@@ -1,4 +1,4 @@
-﻿namespace ChatService.Contracts.Http;
+﻿namespace ChatService.Http.Contracts;
 
 public class MessageRequest
 {

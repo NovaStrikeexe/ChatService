@@ -1,11 +1,11 @@
-﻿using ChatService.Contracts.Http;
-using ChatService.Contracts.SignalR;
+﻿using ChatService.Http.Contracts;
+using ChatService.Services.Message;
+using ChatService.SignalR.Contracts;
+using ChatService.SignalR.Hubs;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using ChatService.Hubs;
-using ChatService.Services.Message;
 
-namespace ChatService.Controllers;
+namespace ChatService.Http.Controllers;
 
 [ApiController]
 [Route("api/v1/message")]
@@ -46,16 +46,16 @@ public class MessagesController(
                 Date = DateTime.UtcNow
             };
 
-            var savedMessage = await messageService.SaveMessageAsync(messageDto, cancellationToken);
+            await messageService.SaveMessageAsync(messageDto, cancellationToken);
 
             await hubContext.Clients.All.SendAsync("ReceiveMessage", new MessageSignalRDto
             {
-                Id = savedMessage.Id,
-                Content = savedMessage.Content,
-                Date = savedMessage.Date
+                Id = messageDto.Id,
+                Content = messageDto.Content,
+                Date = messageDto.Date
             }, cancellationToken);
 
-            logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Message saved and sent to clients: {new { savedMessage.Id, savedMessage.Content, savedMessage.Date }}");
+            logger.LogInformation($"{nameof(MessagesController)}.{nameof(PostMessage)}: Message saved and sent to clients: {new { messageDto.Id, messageDto.Content, messageDto.Date }}");
 
             return Ok();
         }
